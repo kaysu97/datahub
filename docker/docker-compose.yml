@@ -30,8 +30,8 @@ services:
 
   # This "container" is a workaround to pre-create topics
   kafka-setup:
-    build:
-      context: kafka-setup
+    # build:
+    #   context: kafka-setup
     image: ${DATAHUB_KAFKA_SETUP_IMAGE:-linkedin/datahub-kafka-setup}:${DATAHUB_VERSION:-head}
     env_file: kafka-setup/env/docker.env
     hostname: kafka-setup
@@ -81,9 +81,9 @@ services:
 
   # This "container" is a workaround to pre-create search indices
   elasticsearch-setup:
-    build:
-      context: ../
-      dockerfile: docker/elasticsearch-setup/Dockerfile
+    # build:
+    #   context: ../
+    #   dockerfile: docker/elasticsearch-setup/Dockerfile
     image: ${DATAHUB_ELASTIC_SETUP_IMAGE:-linkedin/datahub-elasticsearch-setup}:${DATAHUB_VERSION:-head}
     env_file: elasticsearch-setup/env/docker.env
     hostname: elasticsearch-setup
@@ -92,9 +92,9 @@ services:
       - elasticsearch
 
   datahub-gms:
-    build:
-        context: ../
-        dockerfile: docker/datahub-gms/Dockerfile
+    # build:
+    #     context: ../
+    #     dockerfile: docker/datahub-gms/Dockerfile
     image: ${DATAHUB_GMS_IMAGE:-linkedin/datahub-gms}:${DATAHUB_VERSION:-head}
     hostname: datahub-gms
     container_name: datahub-gms
@@ -103,13 +103,14 @@ services:
     depends_on:
       - elasticsearch-setup
       - kafka-setup
-      - mysql
+      # - mysql
+      - postgres
       - neo4j
 
   datahub-frontend-react:
-    build:
-      context: ../
-      dockerfile: docker/datahub-frontend/Dockerfile
+    # build:
+    #   context: ../
+    #   dockerfile: docker/datahub-frontend/Dockerfile
     image: ${DATAHUB_FRONTEND_IMAGE:-linkedin/datahub-frontend-react}:${DATAHUB_VERSION:-head}
     env_file: datahub-frontend/env/docker.env
     hostname: datahub-frontend-react

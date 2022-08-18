@@ -1,3 +1,6 @@
+-- create database datahub;
+create user datahub with SUPERUSER password 'datahub';
+
 -- create metadata aspect table
 CREATE TABLE IF NOT EXISTS metadata_aspect_v2 (
   urn                           varchar(500) not null,
@@ -33,3 +36,19 @@ INSERT INTO metadata_aspect_v2
 SELECT * FROM temp_metadata_aspect_v2
 WHERE NOT EXISTS (SELECT * from metadata_aspect_v2);
 DROP TABLE temp_metadata_aspect_v2;
+
+-- create metadata index table
+CREATE TABLE metadata_index (
+ id BIGSERIAL NOT NULL,
+ urn VARCHAR(200) NOT NULL,
+ aspect VARCHAR(150) NOT NULL,
+ path VARCHAR(150) NOT NULL,
+ longVal BIGINT,
+ stringVal VARCHAR(200),
+ doubleVal DOUBLE precision,
+ CONSTRAINT id_pk PRIMARY KEY (id)
+);
+
+CREATE INDEX longIndex ON metadata_index (urn,aspect,path,longVal);
+CREATE INDEX stringIndex ON metadata_index (urn,aspect,path,stringVal);
+CREATE INDEX doubleIndex ON metadata_index (urn,aspect,path,doubleVal);

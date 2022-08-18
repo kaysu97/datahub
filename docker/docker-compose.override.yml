@@ -2,38 +2,78 @@
 ---
 version: '3.8'
 services:
-  mysql:
-    container_name: mysql
-    hostname: mysql
-    image: mysql:5.7
-    env_file: mysql/env/docker.env
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+  # mysql:
+  #   container_name: mysql
+  #   hostname: mysql
+  #   image: mysql:5.7
+  #   env_file: mysql/env/docker.env
+  #   command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+  #   ports:
+  #     - ${DATAHUB_MAPPED_MYSQL_PORT:-3306}:3306
+  #   volumes:
+  #     - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #     - mysqldata:/var/lib/mysql
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:12.3
+    env_file: ./postgres/env/docker.env
+    environment:
+    - POSTGRES_HOST_AUTH_METHOD=trust
+    - POSTGRES_HOST=postgres
+    - POSTGRES_PORT=5432
+    - POSTGRES_USERNAME=datahub
+    - POSTGRES_PASSWORD=datahub
+    - DATAHUB_DB_NAME=datahub
     ports:
-      - ${DATAHUB_MAPPED_MYSQL_PORT:-3306}:3306
+      - '5432:5432'
+    # command: psql -U postgres -f /docker-entrypoint-initdb.d/init.sql
     volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - mysqldata:/var/lib/mysql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgresdata:/var/lib/postgres
 
-  mysql-setup:
-    build:
-      context: ../
-      dockerfile: docker/mysql-setup/Dockerfile
-    image: acryldata/datahub-mysql-setup:${DATAHUB_VERSION:-head}
-    env_file: mysql-setup/env/docker.env
-    hostname: mysql-setup
-    container_name: mysql-setup
+  # mysql-setup:
+  #   # build:
+  #   #   context: ../
+  #   #   dockerfile: docker/mysql-setup/Dockerfile
+  #   image: acryldata/datahub-mysql-setup:${DATAHUB_VERSION:-head}
+  #   env_file: mysql-setup/env/docker.env
+  #   hostname: mysql-setup
+  #   container_name: mysql-setup
+  #   depends_on:
+  #     - mysql
+
+  postgres-setup:
+    env_file: ./postgres-setup/env/docker.env
+    container_name: postgres-setup
     depends_on:
-      - mysql
+    - postgres
+    environment:
+    - POSTGRES_HOST_AUTH_METHOD=trust
+    - POSTGRES_HOST=postgres
+    - POSTGRES_PORT=5432
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=postgres
+    - DATAHUB_DB_NAME=datahub
+    hostname: postgres-setup
+    command: dockerize -wait tcp://${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432} -timeout 240s /init.sh
+    image: acryldata/datahub-postgres-setup:${DATAHUB_VERSION:-head}
+    volumes:
+      - ./postgres-setup/init.sql:/init.sql
+      - ./postgres-setup/init.sh:/init.sh
 
   datahub-gms:
-    env_file: datahub-gms/env/docker.env
+    env_file: ./datahub-gms/env/docker.postgres.env
+    # env_file: ./datahub-gms/env/docker.env
     depends_on:
-      - mysql
-    environment:
-      - DATAHUB_SERVER_TYPE=${DATAHUB_SERVER_TYPE:-quickstart}
-      - DATAHUB_TELEMETRY_ENABLED=${DATAHUB_TELEMETRY_ENABLED:-true}
+      # - mysql
+      - postgres-setup
+    # environment:
+    #   - DATAHUB_SERVER_TYPE=${DATAHUB_SERVER_TYPE:-quickstart}
+    #   - DATAHUB_TELEMETRY_ENABLED=${DATAHUB_TELEMETRY_ENABLED:-true}
     volumes:
       - ${HOME}/.datahub/plugins/:/etc/datahub/plugins
       - ${HOME}/.datahub/plugins/auth/resources/:/etc/datahub/plugins/auth/resources
 volumes:
   mysqldata:
+  postgresdata:
